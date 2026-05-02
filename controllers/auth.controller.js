@@ -32,7 +32,23 @@ async function register(req, res) {
             expiresIn: process.env.JWT_EXPIRES_IN
         });
 
-        return successResponse(res, 201, 'User registered successfully', { token });
+        return successResponse(
+            res,
+            201,
+            'User registered successfully',
+            {
+                token,
+                user:
+                {
+                    id:
+                        user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    isActive: user.isActive
+                }
+            }
+        );
     } catch (error) {
         return errorResponse(res, 500, 'Internal server error', null);
     }
@@ -142,7 +158,9 @@ async function forgetPassword(req, res) {
             {
                 email: user.email,
                 subject: 'Password Reset',
-                message: `Click the link to reset your password: ${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`
+                html: `<p>You requested a password reset. Click the link below to reset your password:</p>
+                       <a href="${process.env.FRONTEND_URL}/reset-password?token=${resetToken}">Reset Password</a>
+                       <p>This link will expire in 15 minutes.</p>`
             }
         );
 

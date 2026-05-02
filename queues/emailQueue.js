@@ -25,7 +25,7 @@ const emailQueue = new Queue(
 async function addEmailJobToQueue(jobName, emailData) {
     try {
         // Validate emailData
-        if (!emailData.to || !emailData.subject || !emailData.html) {
+        if (!emailData.email || !emailData.subject || !emailData.html) {
             console.error(
                 "Invalid email data provided to addEmailJob:",
                 JSON.stringify(emailData, null, 2)
@@ -41,4 +41,4 @@ async function addEmailJobToQueue(jobName, emailData) {
     }
 }
 
-export { addEmailJobToQueue };
+export { addEmailJobToQueue, emailQueue };

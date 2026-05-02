@@ -34,11 +34,11 @@ const emailWorker = new Worker(
     `${process.env.PROJECT_NAME}_${process.env.NODE_ENV}_emailQueue`,
     async (job) => {
         try {
-            const { to, subject, html } = job.data;
+            const { email, subject, html } = job.data;
 
             await transporter.sendMail({
                 from: process.env.AUTH_EMAIL, // sender address
-                to, // list of receivers
+                to: job.data.email, // list of receivers
                 subject, // Subject line
                 html, // html body
             });
