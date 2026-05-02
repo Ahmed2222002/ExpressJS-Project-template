@@ -1,8 +1,11 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import { v4 as uuidv4 } from "uuid";
 import { userModel } from "../models/user.model.js";
 import { successResponse, errorResponse } from "../utils/responses.js";
+import { addEmailJobToQueue } from "../queues/emailQueue.js";
 
 async function register(req, res) {
     try {
@@ -112,10 +115,85 @@ async function changePassword(req, res) {
     }
 }
 
+async function forgetPassword(req, res) {
+    try {
+        const { email } = req.body;
+
+        // Check if user exists
+        const user = await userModel.findOne({ email });
+        if (!user) {
+            console.error(`No user found with email: ${email}`);
+            // For security, we can still return a success response to prevent email enumeration
+            return successResponse(res, 200, 'If an account with that email exists, a password reset email has been sent', null);
+        }
+
+        // Generate reset token and set expiration
+        const resetToken = uuidv4();
+
+        // hash the reset token before saving to the database for security
+        const hashedResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        user.resetPasswordToken = hashedResetToken;
+        user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 min
+        await user.save();
+
+        // Add email job to queue
+        const isEmailAdded = await addEmailJobToQueue(
+            'passwordResetEmail',
+            {
+                email: user.email,
+                subject: 'Password Reset',
+                message: `Click the link to reset your password: ${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`
+            }
+        );
+
+        if (!isEmailAdded) {
+            user.resetPasswordToken = null;
+            user.resetPasswordExpires = null;
+            await user.save();
+            return errorResponse(res, 500, 'Failed to send password reset email', null);
+        }
+
+        return successResponse(res, 200, 'If an account with that email exists, a password reset email has been sent', null);
+    } catch (error) {
+        return errorResponse(res, 500, 'Internal server error', null);
+    }
+}
+
+async function resetPassword(req, res) {
+    try {
+        const { token, newPassword } = req.body;
+        // Hash the token to compare with the database
+        const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+        // Find user by reset token and check if it's still valid
+        const user = await userModel.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return errorResponse(res, 400, 'Invalid or expired reset token', null);
+        }
+        // Hash the new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        // Update user's password and clear reset token fields
+        user.password = hashedPassword;
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+        await user.save();
+        return successResponse(res, 200, 'Password reset successfully', null);
+    } catch (error) {
+        return errorResponse(res, 500, 'Internal server error', null);
+    }
+}
+
 
 
 export {
     register,
     login,
-    changePassword
+    changePassword,
+    forgetPassword,
+    resetPassword
 }

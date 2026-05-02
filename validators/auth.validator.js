@@ -20,8 +20,21 @@ const changePasswordValidationRules = [
     validationMiddleware
 ];
 
+const forgetPasswordValidationRules = [
+    check('email').isEmail().withMessage('Valid email is required'),
+    validationMiddleware
+];
+
+const resetPasswordValidationRules = [
+    check('token').notEmpty().withMessage('Reset token is required'),
+    check('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters long'),
+    validationMiddleware
+];
+
 export {
     registerValidationRules,
     loginValidationRules,
-    changePasswordValidationRules
+    changePasswordValidationRules,
+    forgetPasswordValidationRules,
+    resetPasswordValidationRules
 };
