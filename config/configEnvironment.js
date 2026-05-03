@@ -7,7 +7,8 @@ dotenv.config({
 const Environment = {
     NODE_ENV: process.env.NODE_ENV || 'development',
     PORT: process.env.PORT || 3000,
-    DB_URI: process.env.DB_URI || 'mongodb://localhost:27017/expressjs-template'
+    DB_URI: process.env.DB_URI || 'mongodb://localhost:27017/expressjs-template',
+    CORS_ORIGIN : process.env.CORS_ORIGIN || 'http://localhost:3000'
 };
 
 export { Environment };
