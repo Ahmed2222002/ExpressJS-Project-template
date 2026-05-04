@@ -23,8 +23,8 @@ function sendErrorForDevelopment(err, res) {
 
 function sendErrorForProduction(err, res) {
     errorResponse(
-        res, 
-        err.statusCode || 500, 
+        res,
+        err.statusCode || 500,
         'Internal Server Error'
     );
 }
